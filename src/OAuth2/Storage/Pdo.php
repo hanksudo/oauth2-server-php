@@ -24,6 +24,7 @@ class Pdo implements AuthorizationCodeInterface,
 {
     protected $db;
     protected $config;
+    protected $bcrypt;
 
     public function __construct($connection, $config = array())
     {
@@ -55,6 +56,10 @@ class Pdo implements AuthorizationCodeInterface,
             'jwt_table'  => 'oauth_jwt',
             'scope_table' => 'oauth_scopes',
         ), $config);
+
+        if (array_key_exists('bcrypt', $this->config)) {
+            $this->bcrypt = $this->config['bcrypt'];
+        }
     }
 
     /* OAuth2_Storage_ClientCredentialsInterface */
@@ -200,7 +205,11 @@ class Pdo implements AuthorizationCodeInterface,
     // plaintext passwords are bad!  Override this for your application
     protected function checkPassword($user, $password)
     {
-        return $user['password'] == sha1($password);
+        if (! is_null($this->bcrypt)) {
+            return $this->bcrypt->verify($password, $user['password']);
+        } else {
+            return $user['password'] == sha1($password);
+        }
     }
 
     public function getUser($username)
@@ -220,8 +229,13 @@ class Pdo implements AuthorizationCodeInterface,
 
     public function setUser($username, $password, $firstName = null, $lastName = null)
     {
+        // use bcrypt instead of sha1 if config
         // do not store in plaintext
-        $password = sha1($password);
+        if (! is_null($bcrypt)) {
+            $this->bcrypt->hash($password);
+        } else {
+            $password = sha1($password);
+        }
 
         // if it exists, update it.
         if ($this->getUser($username)) {
