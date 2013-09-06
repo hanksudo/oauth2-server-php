@@ -231,8 +231,8 @@ class Pdo implements AuthorizationCodeInterface,
     {
         // use bcrypt instead of sha1 if config
         // do not store in plaintext
-        if (! is_null($bcrypt)) {
-            $this->bcrypt->hash($password);
+        if (! is_null($this->bcrypt)) {
+            $password = $this->bcrypt->hash($password);
         } else {
             $password = sha1($password);
         }
